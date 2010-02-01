@@ -1,0 +1,26 @@
+{
+	"data": {
+		"item_loop": [
+			{
+				"name": "3rd party alarm screen saver",
+				"developer": "Erland Isaksson",
+				"email": "erland_i@hotmail.com",
+				"models": ["touch"],
+				"description": "Allows you to use any screen saver as an alarm screen saver",
+				"items": [
+					{
+						"type": "original",
+						"file": "jive/applets/AlarmSnooze/AlarmSnoozeApplet.lua",
+						"sha": "63870ed951797d74d536c74fa77eac1b21f32cd5"
+					},
+					{
+						"type": "patch",
+						"sha": "ae9daa9187182080bc25c97a96c8ccae80e37958",
+						"url": "http://erland.homeip.net/AlarmSnoozeApplet.patch"
+					}
+				]
+			}		
+		]
+	}
+}
+

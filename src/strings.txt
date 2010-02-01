@@ -1,0 +1,21 @@
+#
+# The two letter codes are defined by ISO 639-1
+# http://en.wikipedia.org/wiki/List_of_ISO_639_codes
+
+PATCHINSTALLER
+	EN	Patch Installer
+
+PATCHINSTALLER_FETCHING
+	EN	Fetching patch list
+
+PATCHINSTALLER_FAILED_TO_APPLY_PATCH
+	EN	Patch not applied, failure during patching
+
+PATCHINSTALLER_FAILED_TO_REVERT_PATCH
+	EN	Patch not reverted, failure during patching
+
+PATCHINSTALLER_RESTART_APP
+	EN	Please restart
+
+PATCHINSTALLER_FAILED_MOREINFO
+	EN	For more information see
