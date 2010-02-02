@@ -42,6 +42,7 @@ function configureApplet(self)
 end
 
 function defaultSettings(self)
+	return { _RECONLY = true }
 end
 
 --[[

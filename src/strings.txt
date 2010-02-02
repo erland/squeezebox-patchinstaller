@@ -19,3 +19,16 @@ PATCHINSTALLER_RESTART_APP
 
 PATCHINSTALLER_FAILED_MOREINFO
 	EN	For more information see
+
+PATCHINSTALLER_FAILED_VERIFY_SHA
+	EN	Patch not downloaded, failed to verify SHA checksum
+
+PATCHINSTALLER_NONE_FOUND
+	EN	No patches found
+
+PATCHINSTALLER_RECONLY
+	EN	Recommended Patches Only
+
+PATCHINSTALLER_WARN
+	EN	3rd party patches are unsupported and should be installed at your own risk.  Please check you trust the author of an patch before installing it. A factory reset removes all installed patches.
+

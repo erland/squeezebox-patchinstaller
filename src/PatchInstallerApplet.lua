@@ -38,6 +38,7 @@ local Window           = require("jive.ui.Window")
 local Label            = require("jive.ui.Label")
 local Textarea         = require("jive.ui.Textarea")
 local Icon             = require("jive.ui.Icon")
+local Checkbox         = require("jive.ui.Checkbox")
 local Popup            = require("jive.ui.Popup")
 local Surface          = require("jive.ui.Surface")
 local Framework        = require("jive.ui.Framework")
@@ -77,15 +78,13 @@ function patchInstallerMenu(self, menuItem, action)
 		self.model = "controller"
 	end
 
---	local window = Window("text_list", menuItem.text)
-
 	if lfs.attributes("/usr/share/jive/applets") ~= nil then
-		self.luadir = "/usr/share"
+		self.luadir = "/usr"
 	else
 		-- find the main lua directory
 		for dir in package.path:gmatch("([^;]*)%?[^;]*;") do
-		        dir = dir .. "share"
-		        local mode = lfs.attributes(dir, "mode")
+			local luadir = dir .. "share"
+		        local mode = lfs.attributes(luadir, "mode")
 		        if mode == "directory" then
 		                self.luadir = dir
 		                break
@@ -95,22 +94,9 @@ function patchInstallerMenu(self, menuItem, action)
 
 	log:warn("Got lua directory: "..self.luadir)
 
---	local http = SocketHttp(jnt, "erlandplugins.googlecode.com", 80)
---	local http = SocketHttp(jnt, "erland.homeip.net", 80)
---	local req = RequestHttp(function(chunk, err)
---			if err then
---				log:warn(err)
---			elseif chunk then
---				log:info("GOT: "..chunk)
---				chunk = json.decode(chunk)
---				self:patchesSink(menuItem,chunk.data)
---			end
---		end,
---		'GET', "/svn/PatchInstaller/trunk/patches/patches.json")
---		'GET', "/patches.json")
---	http:fetch(req)
 	local player = appletManager:callService("getCurrentPlayer")
 	local server = player:getSlimServer()
+	local opt = not self:getSettings()["_RECONLY"]
 	server:userRequest(function(chunk, err)
                                         if err then
                                                 log:warn(err)
@@ -122,7 +108,7 @@ function patchInstallerMenu(self, menuItem, action)
                                 { "jivepatches", 
                                   "target:" .. System:getMachine(), 
                                   "version:" .. string.match(JIVE_VERSION, "(%d%.%d)"),
-                                  "optstr:user"
+                                  opt and "optstr:other|user" or "optstr:none"
                           	}
                         )
 
@@ -143,35 +129,52 @@ function patchesSink(self,menuItem,data)
 	self.window = Window("text_list", menuItem.text)
 	self.menu = SimpleMenu("menu")
 
+	self.menu:setComparator(SimpleMenu.itemComparatorWeightAlpha)
+        self.menu:setHeaderWidget(Textarea("help_text", self:string("PATCHINSTALLER_WARN")))
 	self.window:addWidget(self.menu)
 
 	if data.item_loop then
 		for _,entry in pairs(data.item_loop) do
-			local isCompliant = true
-			if entry.models then
-				isCompliant = false
-				for _,model in pairs(entry.models) do
-					if model == self.model then
-						isCompliant = true
-					end
-				end
-			else
-				log:debug("Supported on all models")
-			end 
-			if isCompliant then
-				self.menu:addItem({
-					text = entry.name,
-					sound = "WINDOWSHOW",
-					callback = function()
+			local checked = false
+			if lfs.attributes(self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".patch") or lfs.attributes(self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements") then
+				checked = true
+			end
+
+			self.menu:addItem({
+				text = entry.title,
+				style = 'item_choice',
+				check = Checkbox("checkbox",
+				        function(object, isSelected)
 						self.appletwindow = self:showPatchDetails(menuItem,entry)
 						return EVENT_CONSUME
-					end
-				})
-			else
-				log:debug("Skipping "..entry.name..", isn't supported on "..self.model)
-			end
+				        end,
+				        checked
+				),
+				weight = 2
+			})
 		end
 	end
+        if self.menu:numItems() == 0 then
+                self.menu:addItem( {
+                        text = self:string("PATCHINSTALLER_NONE_FOUND"), 
+                        iconStyle = 'item_no_arrow',
+                        weight = 2
+                })
+        end
+	self.menu:addItem({
+		        text = self:string("PATCHINSTALLER_RECONLY"),
+		        style = 'item_choice',
+		        check = Checkbox("checkbox",
+		                function(object, isSelected)
+		                        self:getSettings()["_RECONLY"] = isSelected
+		                        self:storeSettings()
+		                end,
+		                self:getSettings()["_RECONLY"]
+		        ),
+		        weight = 3
+		})
+
+
 
 	self:tieAndShowWindow(self.window)
 	return self.window
@@ -182,9 +185,9 @@ function showPatchDetails(self,menuItem,entry)
 	local menu = SimpleMenu("menu")
 	window:addWidget(menu)
 
-	local description = entry.description
-	if entry.developer then
-		description = description .. "\n" .. entry.developer
+	local description = entry.desc
+	if entry.creator then
+		description = description .. "\n" .. entry.creator
 	end
 	if entry.email then
 		description = description .. "\n" .. entry.email
@@ -192,53 +195,40 @@ function showPatchDetails(self,menuItem,entry)
 	
 	menu:setHeaderWidget(Textarea("help_text",description))
 	
-	local enabled = 1
-	for _,item in pairs(entry.items) do
-		if lfs.attributes(self.luadir.."/jive/applets/PatchInstaller.patches/"..entry.name..".patch") == nil and item.type == "original" and item.sha then
-			log:debug("Checking sha of: "..self.luadir.."/"..item.file)
-			local f = io.open(self.luadir.."/"..item.file, "rb")
-			if f then
-				local content = f:read("*all")
-				f:close()
-				local sha1 = sha1:new()
-				sha1:update(content)
-				if sha1:digest() ~= item.sha then
-					log:warn("Missmatched sha on "..self.luadir.."/"..item.file)
-					enabled = 0
-				else
-					log:debug("sha verified on "..self.luadir.."/"..item.file)
-				end
-			else
-				log:warn("Unable to read file "..self.luadir.."/"..item.file)
-				enabled = 0
-			end
-		end
-	end
 
-	if enabled == 1 then
-		if lfs.attributes(self.luadir.."/jive/applets/PatchInstaller.patches/"..entry.name..".patch") then
-			menu:addItem(
-				{
-					text = tostring(self:string("UNINSTALL")) .. ": " .. entry.name,
-					sound = "WINDOWSHOW",
-					callback = function(event, menuItem)
-						self:revertPatch(entry)
-						return EVENT_CONSUME
-					end
-				}
-			)
-		else
-			menu:addItem(
-				{
-					text = tostring(self:string("INSTALL")) .. ": " .. entry.name,
-					sound = "WINDOWSHOW",
-					callback = function(event, menuItem)
-						self:applyPatch(entry)
-						return EVENT_CONSUME
-					end
-				}
-			)
-		end
+	if lfs.attributes(self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".patch") then
+		menu:addItem(
+			{
+				text = tostring(self:string("UNINSTALL")) .. ": " .. entry.title,
+				sound = "WINDOWSHOW",
+				callback = function(event, menuItem)
+					self:revertPatch(entry)
+					return EVENT_CONSUME
+				end
+			}
+		)
+	elseif lfs.attributes(self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements") then
+		menu:addItem(
+			{
+				text = tostring(self:string("REINSTALL")) .. ": " .. entry.title,
+				sound = "WINDOWSHOW",
+				callback = function(event, menuItem)
+					self:applyPatch(entry)
+					return EVENT_CONSUME
+				end
+			}
+		)
+	else
+		menu:addItem(
+			{
+				text = tostring(self:string("INSTALL")) .. ": " .. entry.title,
+				sound = "WINDOWSHOW",
+				callback = function(event, menuItem)
+					self:applyPatch(entry)
+					return EVENT_CONSUME
+				end
+			}
+		)
 	end
 	self:tieAndShowWindow(window)
 	return window
@@ -263,7 +253,11 @@ function applyPatch(self, entry)
 				        self.appletwindow:hide()
 				end
 				self.window:removeWidget(self.menu)
-				self.window:addWidget(Textarea("help_text", tostring(self:string("PATCHINSTALLER_FAILED_TO_APPLY_PATCH")).."\n"..tostring(self:string("PATCHINSTALLER_FAILED_MOREINFO"))..":\n/tmp/PatchInstaller.rej"))
+				if self.downloadedSha == nil or (entry.sha and entry.sha ~= self.downloadedSha) then
+					self.window:addWidget(Textarea("help_text", self:string("PATCHINSTALLER_FAILED_VERIFY_SHA")))
+				else
+					self.window:addWidget(Textarea("help_text", tostring(self:string("PATCHINSTALLER_FAILED_TO_APPLY_PATCH")).."\n"..tostring(self:string("PATCHINSTALLER_FAILED_MOREINFO"))..":\n/tmp/PatchInstaller.rej"))
+				end
 			end
 		end)
 
@@ -281,7 +275,9 @@ function revertPatch(self, entry)
         self.animatewindow:show()
 
         self.task = Task("patch download", self, function()
-			if self:patching(entry.name,self.luadir.."/jive/applets/PatchInstaller.patches/"..entry.name..".patch",true) then
+			if self:patching(entry.name,self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".patch",true) then
+				os.execute("rm -f \""..self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".patch\"")
+				os.execute("rm -rf \""..self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements\"")
 				self:_finished(label)
 			else
 				self.animatewindow:hide()
@@ -319,62 +315,68 @@ end
 
 function _download(self,entry)
 	local success = true
-	os.execute("mkdir -p \""..self.luadir.."/jive/applets/PatchInstaller.patches\"")
-	os.execute("rm -f \""..self.luadir.."/jive/applets/PatchInstaller.patches/"..entry.name..".patch\"")
-	for _,item in pairs(entry.items) do
-		if success then
-			if (item.type == "replacement" or item.type == "patch") and item.sha and item.url then
-				log:debug("Downloading and checking sha of: "..item.url)
-				self.downloadedSha = nil
-				self.downloaded = false
-				local req = RequestHttp(self:_downloadShaCheck(), 'GET', item.url, { stream = true })
-				local uri = req:getURI()
-			
-				local http = SocketHttp(jnt, uri.host, uri.port, uri.host)
-				http:fetch(req)
+	os.execute("mkdir -p \""..self.luadir.."/share/jive/applets/PatchInstaller.patches\"")
+	if string.find(entry.url,"%.zip") then
+		os.execute("rm -rf \""..self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements\"")
+		os.execute("mkdir -p \""..self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements\"")
+	end
+	os.execute("rm -f \""..self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".patch\"")
+
+	self.downloadedSha = false
+	if entry.sha then
+		log:debug("Downloading "..entry.url.." ...")
+		self.downloaded = false
+		local req = RequestHttp(self:_downloadShaCheck(), 'GET', entry.url, {stream = true})
+		local uri = req:getURI()
 		
-				while not self.downloaded do
-					self.task:yield()
-				end
+		local http = SocketHttp(jnt, uri.host, uri.port, uri.host)
+		http:fetch(req)
 
-				if self.downloadedSha == nil or item.sha ~= self.downloadedSha then
-					log:warn("Missmatched sha on "..item.url.." got "..self.downloadedSha)
-				else
-					log:debug("sha verified on "..item.url)
-				end
+		while not self.downloaded do
+			self.task:yield()
+		end
+		
+		if self.downloadedSha == nil or entry.sha ~= self.downloadedSha then
+			log:warn("Mismatched sha on "..entry.url.." got "..self.downloadedSha.." expected "..entry.sha)
+			success = false
+		else
+			log:debug("Downloaded and verified sha on "..entry.url)
+		end
+	end
+
+	if success and string.find(entry.url,"%.zip") then
+		self.downloaded = false
+		local sink = ltn12.sink.chain(zip.filter(),self:_downloadFile(self.luadir))
+
+		local req = RequestHttp(sink, 'GET', entry.url, {stream = true})
+		local uri = req:getURI()
+
+		local http = SocketHttp(jnt, uri.host, uri.port, uri.host)
+		http:fetch(req)
+
+		while not self.downloaded do
+			self.task:yield()
+		end
+		if lfs.attributes(self.luadir.."/"..entry.name..".patch") ~= nil then
+			if not self:patching(entry.name,self.luadir.."/"..entry.name..".patch",false) then
+				success = false
 			end
+		end
+		log:debug("Finished downloading "..entry.url)
+	elseif success and string.find(entry.url,"%.patch") then
+		self.downloaded = false
+		local req = RequestHttp(self:_downloadPatchFile(self.luadir.."/",entry.name..".patch"), 'GET', entry.url, {stream = true})
+		local uri = req:getURI()
 
-			if item.type == "replacement" and item.url then
-				self.downloaded = false
-				local sink = ltn12.sink.chain(zip.filter(),self:_downloadFile(self.luadir.."/"))
+		local http = SocketHttp(jnt, uri.host, uri.port, uri.host)
+		http:fetch(req)
 
-				local req = RequestHttp(sink, 'GET', item.url, {stream = true})
-				local uri = req:getURI()
-
-				local http = SocketHttp(jnt, uri.host, uri.port, uri.host)
-				http:fetch(req)
-
-				while not self.downloaded do
-					self.task:yield()
-				end
-				log:debug("Finished downloading "..item.url)
-			elseif item.type == "patch" and item.url then
-				self.downloaded = false
-				_, _, filename = string.find(item.url,"/([^/]+)$")
-				local req = RequestHttp(self:_downloadPatchFile(self.luadir.."/",filename), 'GET', item.url, {stream = true})
-				local uri = req:getURI()
-
-				local http = SocketHttp(jnt, uri.host, uri.port, uri.host)
-				http:fetch(req)
-
-				while not self.downloaded do
-					self.task:yield()
-				end
-				log:debug("Finished downloading "..item.url)
-				if not self:patching(entry.name,self.luadir.."/"..filename,false) then
-					success = false
-				end
-			end
+		while not self.downloaded do
+			self.task:yield()
+		end
+		log:debug("Finished downloading "..entry.url)
+		if not self:patching(entry.name,self.luadir.."/"..entry.name..".patch",false) then
+			success = false
 		end
 	end
 	return success
@@ -394,7 +396,7 @@ function patching(self,name,patchfile,revert)
 			os.execute("patch -p0 --reverse -t -d "..self.luadir.." < \""..patchfile.."\"")
 		else
 			os.execute("patch -p0 --forward -t -d "..self.luadir.." < \""..patchfile.."\"")
-			os.execute("cat "..self.luadir.."/"..filename..">> \""..self.luadir.."/jive/applets/PatchInstaller.patches/"..name..".patch\"")
+			os.execute("cat \""..patchfile.."\">> \""..self.luadir.."/share/jive/applets/PatchInstaller.patches/"..name..".patch\"")
 		end
 		os.execute("rm -f \""..patchfile.."\"")
 		log:debug("Patching finished")
@@ -433,22 +435,21 @@ function _downloadFile(self, dir)
         return function(chunk)
 
                 if chunk == nil then
-                        if fh and fh ~= DIR then
+                        if fh and fh ~= 'DIR' then
                                 fh:close()
-                                fh = nil
-                                self.downloaded = true
-                                return nil
                         end
+                        fh = nil
+                        self.downloaded = true
+                        return nil
 
                 elseif type(chunk) == "table" then
 
-                        if fh then
-                                fh:close()
-                                fh = nil
-                        end
+                        if fh and fh ~= 'DIR' then
+		                fh:close()
+			end
+                        fh = nil
 
                         local filename = dir .. chunk.filename
-
                         if string.sub(filename, -1) == "/" then
                                 log:info("creating directory: " .. filename)
                                 lfs.mkdir(filename)
