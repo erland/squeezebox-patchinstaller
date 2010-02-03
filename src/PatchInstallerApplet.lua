@@ -80,7 +80,7 @@ function patchInstallerMenu(self, menuItem, action)
 	end
 
 	if lfs.attributes("/usr/share/jive/applets") ~= nil then
-		self.luadir = "/usr"
+		self.luadir = "/usr/"
 	else
 		-- find the main lua directory
 		for dir in package.path:gmatch("([^;]*)%?[^;]*;") do
@@ -189,7 +189,7 @@ function patchesSink(self,server,data)
 	if data.item_loop then
 		for _,entry in pairs(data.item_loop) do
 			local checked = false
-			if lfs.attributes(self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".patch") or lfs.attributes(self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements") then
+			if lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".patch") or lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements") then
 				checked = true
 			end
 
@@ -251,24 +251,13 @@ function showPatchDetails(self,title,entry)
 	menu:setHeaderWidget(Textarea("help_text",description))
 	
 
-	if lfs.attributes(self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".patch") then
+	if lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".patch") or lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements") then
 		menu:addItem(
 			{
 				text = tostring(self:string("UNINSTALL")),
 				sound = "WINDOWSHOW",
 				callback = function(event, menuItem)
 					self:revertPatch(entry)
-					return EVENT_CONSUME
-				end
-			}
-		)
-	elseif lfs.attributes(self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements") then
-		menu:addItem(
-			{
-				text = tostring(self:string("REINSTALL")),
-				sound = "WINDOWSHOW",
-				callback = function(event, menuItem)
-					self:applyPatch(entry)
 					return EVENT_CONSUME
 				end
 			}
@@ -330,9 +319,20 @@ function revertPatch(self, entry)
         self.animatewindow:show()
 
         self.task = Task("patch download", self, function()
-			if self:patching(entry.name,self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".patch",true) then
-				os.execute("rm -f \""..self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".patch\"")
-				os.execute("rm -rf \""..self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements\"")
+			local success = true
+			if lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".patch") then
+				if self:patching(entry.name,self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".patch",true) then
+					os.execute("rm -f \""..self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".patch\"")
+				else
+					success = false
+				end
+			end
+			if success and lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements") then
+				os.execute("cp -r \""..self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements/\"* "..self.luadir)
+				os.execute("rm -rf \""..self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements\"")
+			end
+
+			if success then
 				self:_finished(label)
 			else
 				self.animatewindow:hide()
@@ -370,12 +370,12 @@ end
 
 function _download(self,entry)
 	local success = true
-	os.execute("mkdir -p \""..self.luadir.."/share/jive/applets/PatchInstaller.patches\"")
+	os.execute("mkdir -p \""..self.luadir.."share/jive/applets/PatchInstaller.patches\"")
 	if string.find(entry.url,"%.zip") then
-		os.execute("rm -rf \""..self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements\"")
-		os.execute("mkdir -p \""..self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements\"")
+		os.execute("rm -rf \""..self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements\"")
+		os.execute("mkdir -p \""..self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements\"")
 	end
-	os.execute("rm -f \""..self.luadir.."/share/jive/applets/PatchInstaller.patches/"..entry.name..".patch\"")
+	os.execute("rm -f \""..self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".patch\"")
 
 	self.downloadedSha = false
 	if entry.sha then
@@ -401,7 +401,7 @@ function _download(self,entry)
 
 	if success and string.find(entry.url,"%.zip") then
 		self.downloaded = false
-		local sink = ltn12.sink.chain(zip.filter(),self:_downloadFile(self.luadir))
+		local sink = ltn12.sink.chain(zip.filter(),self:_downloadFile(self.luadir,self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements"))
 
 		local req = RequestHttp(sink, 'GET', entry.url, {stream = true})
 		local uri = req:getURI()
@@ -451,7 +451,7 @@ function patching(self,name,patchfile,revert)
 			os.execute("patch -p0 --reverse -t -d "..self.luadir.." < \""..patchfile.."\"")
 		else
 			os.execute("patch -p0 --forward -t -d "..self.luadir.." < \""..patchfile.."\"")
-			os.execute("cat \""..patchfile.."\">> \""..self.luadir.."/share/jive/applets/PatchInstaller.patches/"..name..".patch\"")
+			os.execute("cat \""..patchfile.."\">> \""..self.luadir.."share/jive/applets/PatchInstaller.patches/"..name..".patch\"")
 		end
 		os.execute("rm -f \""..patchfile.."\"")
 		log:debug("Patching finished")
@@ -484,7 +484,7 @@ function _downloadPatchFile(self, dir, filename)
         end
 end
 
-function _downloadFile(self, dir)
+function _downloadFile(self, dir, backupdir)
         local fh = nil
 
         return function(chunk)
@@ -510,6 +510,11 @@ function _downloadFile(self, dir)
                                 lfs.mkdir(filename)
                                 fh = 'DIR'
                         else
+				if lfs.attributes(filename) ~= nil then
+					local dir = string.gsub(filename,"/[^/]+$","/")
+					os.execute("mkdir -p \""..backupdir.."/"..dir.."\"")
+					os.execute("cp \""..filename.."\" \""..backupdir.."/"..filename.."\"")
+				end
                                 log:info("extracting file: " .. filename)
                                 fh = io.open(filename, "w")
                         end
