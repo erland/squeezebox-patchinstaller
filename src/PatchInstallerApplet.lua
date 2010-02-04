@@ -242,7 +242,7 @@ function showPatchDetails(self,title,entry)
 
 	local description = entry.desc
 	if entry.creator then
-		description = description .. "\n" .. entry.creator
+		description = description .. "\n" .. tostring(self:string("PATCHINSTALLER_CREATED_BY"))..": "..entry.creator
 	end
 	if entry.email then
 		description = description .. "\n" .. entry.email

@@ -32,3 +32,5 @@ PATCHINSTALLER_RECONLY
 PATCHINSTALLER_WARN
 	EN	3rd party patches are unsupported and should be installed at your own risk.  Please check you trust the author of an patch before installing it. A factory reset removes all installed patches.
 
+PATCHINSTALLER_CREATED_BY
+	EN	Created by
