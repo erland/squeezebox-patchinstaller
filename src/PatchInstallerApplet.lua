@@ -417,6 +417,11 @@ function _download(self,entry)
 				success = false
 			end
 		end
+		os.execute("rm -f /tmp/PatchInstallerAbout.rej")
+		os.execute("patch -p0 --forward -t --dry-run --global-reject-file=/tmp/PatchInstallerAbout.rej -d "..self.luadir.." < \""..self.luadir.."share/jive/applets/PatchInstaller/about.patch\"")
+		if lfs.attributes("/tmp/PatchInstallerAbout.rej") == nil then
+			os.execute("patch -p0 --forward -t -d "..self.luadir.." < \""..self.luadir.."share/jive/applets/PatchInstaller/about.patch\"")
+		end
 		log:debug("Finished downloading "..entry.url)
 	elseif success and string.find(entry.url,"%.patch") then
 		self.downloaded = false
@@ -432,6 +437,12 @@ function _download(self,entry)
 		log:debug("Finished downloading "..entry.url)
 		if not self:patching(entry.name,self.luadir.."/"..entry.name..".patch",false) then
 			success = false
+		else
+			os.execute("rm -f /tmp/PatchInstallerAbout.rej")
+			os.execute("patch -p0 --forward -t --dry-run --global-reject-file=/tmp/PatchInstallerAbout.rej -d "..self.luadir.." < \""..self.luadir.."share/jive/applets/PatchInstaller/about.patch\"")
+			if lfs.attributes("/tmp/PatchInstallerAbout.rej") == nil then
+				os.execute("patch -p0 --forward -t -d "..self.luadir.." < \""..self.luadir.."share/jive/applets/PatchInstaller/about.patch\"")
+			end
 		end
 	end
 	return success

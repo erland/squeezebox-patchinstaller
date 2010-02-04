@@ -1,0 +1,12 @@
+--- share/jive/applets/AboutJive/AboutJiveApplet.lua.old	2010-02-04 07:20:50.000000000 +0100
++++ share/jive/applets/AboutJive/AboutJiveApplet.lua	2010-02-04 07:23:32.000000000 +0100
+@@ -36,6 +36,9 @@
+ 		tostring(self:string("ABOUT_VERSION")),
+ 		version,
+ 		"",
++		"Patches may be installed",
++		"(see Patch Installer menu)",
++		"",
+ 		tostring(self:string("ABOUT_CREDITS")),
+ 		"     Sean Adams",
+ 		"     Maurice Alou",
