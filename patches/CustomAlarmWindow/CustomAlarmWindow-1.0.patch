@@ -1,0 +1,88 @@
+--- share/jive/applets/AlarmSnooze/AlarmSnoozeApplet.lua.orig	2010-02-05 07:17:57.000000000 +0100
++++ share/jive/applets/AlarmSnooze/AlarmSnoozeApplet.lua	2010-02-05 07:30:56.000000000 +0100
+@@ -107,6 +107,9 @@
+ 	return self
+ end
+ 
++function registerAlternativeAlarmWindow(self, serviceName)
++	self.alternativeAlarmWindow = serviceName
++end
+ 
+ function notify_playerAlarmState(self, player, alarmState, alarmNext)
+ 
+@@ -443,6 +446,15 @@
+ 		return
+ 	end
+ 
++	if self.alternativeAlarmWindow then
++		appletManager:callService(self.alternativeAlarmWindow, caller)
++		return
++	else
++		self:_openAlarmWindow(caller)
++	end
++end
++
++function _openAlarmWindow(self, caller)
+ 	local window = Window('alarm_popup', self:string('ALARM_SNOOZE_ALARM'))
+ 
+ 	self.time = datetime:getCurrentTime()
+@@ -536,6 +548,11 @@
+ 	end 	 
+ end
+ 
++function alarmOff(self, stopStream)
++	if self.alarmInProgress then
++		self:_alarmOff(stopStream)
++	end
++end
+ 
+ function _alarmOff(self, stopStream)
+ 	if self.alarmInProgress == 'rtc' then
+@@ -552,7 +569,9 @@
+ 	
+ 	self.alarmInProgress = nil
+ 	self:_stopTimer()
+-	self.alarmWindow:playSound("WINDOWHIDE")
++	if self.alarmWindow then
++		self.alarmWindow:playSound("WINDOWHIDE")
++	end
+ 	self:_hideAlarmWindow()
+ 	
+ 	self:_stopDecodeStatePoller()
+@@ -645,6 +664,11 @@
+ 	self.RTCAlarmTimer:start()
+ end
+ 
++function alarmSnooze(self)
++	if self.alarmInProgress then
++		self:_alarmSnooze()
++	end
++end
+ 
+ function _alarmSnooze(self)
+ 	
+@@ -669,8 +693,9 @@
+ 		self.localPlayer:snooze()
+ 	end
+ 	self:_stopDecodeStatePoller()
+-
+-	self.alarmWindow:playSound("WINDOWHIDE")
++	if self.alarmWindow then
++		self.alarmWindow:playSound("WINDOWHIDE")
++	end
+ 	self:_hideAlarmWindow()
+ end
+ 
+--- share/jive/applets/AlarmSnooze/AlarmSnoozeMeta.lua.orig	2010-02-05 07:18:09.000000000 +0100
++++ share/jive/applets/AlarmSnooze/AlarmSnoozeMeta.lua	2010-02-05 07:29:06.000000000 +0100
+@@ -20,7 +20,9 @@
+ end
+ 
+ function registerApplet(self)
+-
++	self:registerService("registerAlternativeAlarmWindow")
++	self:registerService("alarmOff")
++	self:registerService("alarmSnooze")
+ end
+ 
+ function configureApplet(self)
