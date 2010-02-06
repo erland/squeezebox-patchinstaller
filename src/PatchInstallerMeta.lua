@@ -20,10 +20,11 @@ local oo            = require("loop.simple")
 
 local AppletMeta    = require("jive.AppletMeta")
 local jul           = require("jive.utils.log")
+local Timer         = require("jive.ui.Timer")
 
 local appletManager = appletManager
 local jiveMain      = jiveMain
-
+local JIVE_VERSION  = jive.JIVE_VERSION
 
 module(...)
 oo.class(_M, AppletMeta)
@@ -34,15 +35,28 @@ function jiveVersion(self)
 end
 
 function registerApplet(self)
+	self:registerService("isPatchInstalled")
+	self:registerService("patchInstallerMenu")
 	self.menu = self:menuItem('appletPatchInstaller', 'advancedSettings', self:string("PATCHINSTALLER"), function(applet, ...) applet:patchInstallerMenu(...) end)
 	jiveMain:addItem(self.menu)
 end
 
 function configureApplet(self)
+	if self:getSettings()["_AUTOUP"] and self:getSettings()["_LASTVER"] and self:getSettings()["_LASTVER"] ~= JIVE_VERSION then
+		Timer(
+			5000,
+			function() 
+				appletManager:callService("patchInstallerMenu",{ text = self:string("PATCHINSTALLER") }, 'auto')
+			end,
+			true
+		):start()
+	end
+	self:getSettings()["_LASTVER"] = JIVE_VERSION
+	self:storeSettings()
 end
 
 function defaultSettings(self)
-	return { _RECONLY = true }
+	return { _RECONLY = true,_AUTOUP = false }
 end
 
 --[[

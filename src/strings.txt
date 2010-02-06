@@ -29,8 +29,20 @@ PATCHINSTALLER_NONE_FOUND
 PATCHINSTALLER_RECONLY
 	EN	Recommended Patches Only
 
+PATCHINSTALLER_REINSTALL_ALL
+	EN	Reinstall All
+
+PATCHINSTALLER_AUTOUPGRADE
+	EN	Reinstall after Firmware Update
+
 PATCHINSTALLER_WARN
 	EN	3rd party patches are unsupported and should be installed at your own risk.  Please check you trust the author of an patch before installing it. A factory reset removes all installed patches.
 
 PATCHINSTALLER_CREATED_BY
 	EN	Created by
+
+PATCHINSTALLER_INSTALL
+	EN	Install
+
+PATCHINSTALLER_UNINSTALL
+	EN	Uninstall

@@ -69,6 +69,7 @@ oo.class(_M, Applet)
 function patchInstallerMenu(self, menuItem, action)
 
 	log:debug("Patch Installer")
+	self.auto = action and action == 'auto'
 
 	local width,height = Framework.getScreenSize()
 	if width == 480 then
@@ -111,21 +112,32 @@ function patchInstallerMenu(self, menuItem, action)
 	        
 	        if not server:isSqueezeNetwork() or player ~= nil then
 	                log:info("sending query to ", tostring(server), " player ", tostring(player))
-			server:userRequest(function(chunk, err)
-                                        if err then
-                                                log:warn(err)
-                                        elseif chunk then
-                                                self:patchesSink(server, chunk.data)
-                                        end
-                                end,
-                                player and player:getId(),
-                                { "jivepatches", 
-                                  "target:" .. System:getMachine(), 
-                                  "version:" .. string.match(JIVE_VERSION, "(%d%.%d)"),
-                                  opt and "optstr:other|user" or "optstr:none"
-                          	}
-                        )
-			self.waitingfor = self.waitingfor + 1
+			server:userRequest(function(chunk,err)
+					if err then
+						log:warn(err)
+					else
+						if chunk.data._can == 1 then
+							server:userRequest(function(chunk, err)
+								        if err then
+								                log:warn(err)
+								        elseif chunk then
+								                self:patchesSink(server, chunk.data)
+								        end
+								end,
+								player and player:getId(),
+								{ "jivepatches", 
+								  "target:" .. System:getMachine(), 
+								  "version:" .. string.match(JIVE_VERSION, "(%d%.%d)"),
+								  opt and "optstr:other|user" or "optstr:none"
+							  	}
+							)
+							self.waitingfor = self.waitingfor + 1
+						end
+					end
+				end,
+				player and player:getId(),
+				{'can','jivepatches', '?'}
+			)
 		end
 	end
 
@@ -149,6 +161,15 @@ function patchInstallerMenu(self, menuItem, action)
         self:tieAndShowWindow(popup)
 
         self.popup = popup
+end
+
+function isPatchInstalled(self,patchname)
+	if lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..patchname..".patch") then
+		if self:getSettings()[patchname] then
+			return true
+		end
+	end
+	return false
 end
 
 function patchesSink(self,server,data)
@@ -179,20 +200,35 @@ function patchesSink(self,server,data)
                 end
         end
 
-	self.window = Window("text_list", tostring(self:string("PATCHINSTALLER")).." ("..server.name..")")
+	if self.window and self.menu then
+		self.window:removeWidget(self.menu)
+		self.window:hide()
+	end
+	if server then
+		self.window = Window("text_list", tostring(self:string("PATCHINSTALLER")).." ("..server.name..")")
+	else
+		self.window = Window("text_list", tostring(self:string("PATCHINSTALLER")))
+	end
 	self.menu = SimpleMenu("menu")
 
 	self.menu:setComparator(SimpleMenu.itemComparatorWeightAlpha)
         self.menu:setHeaderWidget(Textarea("help_text", self:string("PATCHINSTALLER_WARN")))
 	self.window:addWidget(self.menu)
 
-	if data.item_loop then
+	self.reinstallList = nil
+
+	local idx = 0
+	if data and data.item_loop then
 		for _,entry in pairs(data.item_loop) do
 			local checked = false
 			if lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".patch") or lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements") then
 				checked = true
 			end
-
+			if self:getSettings()[entry.name] and not checked then
+				self.reinstallList = self.reinstallList or {}
+				self.reinstallList[idx] = entry
+				idx = idx + 1
+			end
 			self.menu:addItem({
 				text = entry.title,
 				style = 'item_choice',
@@ -207,12 +243,22 @@ function patchesSink(self,server,data)
 			})
 		end
 	end
+
         if self.menu:numItems() == 0 then
                 self.menu:addItem( {
                         text = self:string("PATCHINSTALLER_NONE_FOUND"), 
                         iconStyle = 'item_no_arrow',
                         weight = 2
                 })
+	elseif self.reinstallList then
+		self.menu:addItem({
+				text = self:string("PATCHINSTALLER_REINSTALL_ALL"),
+				callback = function(object, menuItem)
+						self:applyPatch(self.reinstallList)
+						return EVENT_CONSUME
+					end,
+				weight = 1
+			})
         end
 	self.menu:addItem({
 		        text = self:string("PATCHINSTALLER_RECONLY"),
@@ -221,17 +267,33 @@ function patchesSink(self,server,data)
 		                function(object, isSelected)
 		                        self:getSettings()["_RECONLY"] = isSelected
 		                        self:storeSettings()
+					self:patchInstallerMenu()
 		                end,
 		                self:getSettings()["_RECONLY"]
 		        ),
 		        weight = 3
 		})
+	self.menu:addItem({
+		        text = self:string("PATCHINSTALLER_AUTOUPGRADE"),
+		        style = 'item_choice',
+		        check = Checkbox("checkbox",
+		                function(object, isSelected)
+		                        self:getSettings()["_AUTOUP"] = isSelected
+		                        self:storeSettings()
+		                end,
+		                self:getSettings()["_AUTOUP"]
+		        ),
+		        weight = 4
+		})
 
 
 
 	self.popup:hide()
-	
+
 	self:tieAndShowWindow(self.window)
+	if self.auto and self.reinstallList then
+		self:applyPatch(self.reinstallList)
+	end
 	return self.window
 end
 
@@ -254,7 +316,7 @@ function showPatchDetails(self,title,entry)
 	if lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".patch") or lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements") then
 		menu:addItem(
 			{
-				text = tostring(self:string("UNINSTALL")),
+				text = tostring(self:string("PATCHINSTALLER_UNINSTALL")),
 				sound = "WINDOWSHOW",
 				callback = function(event, menuItem)
 					self:revertPatch(entry)
@@ -265,10 +327,12 @@ function showPatchDetails(self,title,entry)
 	else
 		menu:addItem(
 			{
-				text = tostring(self:string("INSTALL")),
+				text = tostring(self:string("PATCHINSTALLER_INSTALL")),
 				sound = "WINDOWSHOW",
 				callback = function(event, menuItem)
-					self:applyPatch(entry)
+					local entries = {}
+					entries[0] = entry
+					self:applyPatch(entries)
 					return EVENT_CONSUME
 				end
 			}
@@ -278,8 +342,7 @@ function showPatchDetails(self,title,entry)
 	return window
 end
 
-function applyPatch(self, entry)
-	log:debug("Applying patch: "..entry.name)
+function applyPatch(self, entries)
         -- generate animated downloading screen
         local icon = Icon("icon_connecting")
         self.animatelabel = Label("text", self:string("DOWNLOADING"))
@@ -289,7 +352,26 @@ function applyPatch(self, entry)
         self.animatewindow:show()
 
         self.task = Task("patch download", self, function()
-			if self:_download(entry) then
+			local success = true
+			local shaProblem = false
+			for _, entry in pairs(entries) do
+				log:debug("Applying patch: "..entry.name)
+				if self:_download(entry) then
+					self:getSettings()[entry.name] = entry.version
+			                self:storeSettings()
+				else 
+					if self.downloadedSha == nil or (entry.sha and entry.sha ~= self.downloadedSha) then
+						log:warn("Failed verifying sha checksum for: "..entry.name)
+						shaProblem = true
+					else
+						log:warn("Failed applying patch: "..entry.name)
+					end
+					success = false
+					break
+				end
+			end
+
+			if success then
 				self:_finished(label)
 			else
 				self.animatewindow:hide()
@@ -297,7 +379,7 @@ function applyPatch(self, entry)
 				        self.appletwindow:hide()
 				end
 				self.window:removeWidget(self.menu)
-				if self.downloadedSha == nil or (entry.sha and entry.sha ~= self.downloadedSha) then
+				if shaProblem then
 					self.window:addWidget(Textarea("help_text", self:string("PATCHINSTALLER_FAILED_VERIFY_SHA")))
 				else
 					self.window:addWidget(Textarea("help_text", tostring(self:string("PATCHINSTALLER_FAILED_TO_APPLY_PATCH")).."\n"..tostring(self:string("PATCHINSTALLER_FAILED_MOREINFO"))..":\n/tmp/PatchInstaller.rej"))
@@ -333,6 +415,8 @@ function revertPatch(self, entry)
 			end
 
 			if success then
+				self:getSettings()[entry.name] = nil
+	                        self:storeSettings()
 				self:_finished(label)
 			else
 				self.animatewindow:hide()
