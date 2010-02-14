@@ -71,30 +71,7 @@ function patchInstallerMenu(self, menuItem, action)
 	log:debug("Patch Installer")
 	self.auto = action and action == 'auto'
 
-	local width,height = Framework.getScreenSize()
-	if width == 480 then
-		self.model = "touch"
-	elseif width == 320 then
-		self.model = "radio"
-	else
-		self.model = "controller"
-	end
-
-	if lfs.attributes("/usr/share/jive/applets") ~= nil then
-		self.luadir = "/usr/"
-	else
-		-- find the main lua directory
-		for dir in package.path:gmatch("([^;]*)%?[^;]*;") do
-			local luadir = dir .. "share"
-		        local mode = lfs.attributes(luadir, "mode")
-		        if mode == "directory" then
-		                self.luadir = dir
-		                break
-		        end
-		end
-	end
-
-	log:warn("Got lua directory: "..self.luadir)
+	self:init()
 
 	local opt = not self:getSettings()["_RECONLY"]
 	self.waitingfor = 0
@@ -163,7 +140,37 @@ function patchInstallerMenu(self, menuItem, action)
         self.popup = popup
 end
 
+function init(self)
+	if not self.luadir then
+		local width,height = Framework.getScreenSize()
+		if width == 480 then
+			self.model = "touch"
+		elseif width == 320 then
+			self.model = "radio"
+		else
+			self.model = "controller"
+		end
+
+		if lfs.attributes("/usr/share/jive/applets") ~= nil then
+			self.luadir = "/usr/"
+		else
+			-- find the main lua directory
+			for dir in package.path:gmatch("([^;]*)%?[^;]*;") do
+				local luadir = dir .. "share"
+				local mode = lfs.attributes(luadir, "mode")
+				if mode == "directory" then
+				        self.luadir = dir
+				        break
+				end
+			end
+		end
+
+		log:debug("Got lua directory: "..self.luadir)
+	end
+end
+
 function isPatchInstalled(self,patchname)
+	self:init()
 	if lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..patchname..".patch") then
 		if self:getSettings()[patchname] then
 			return true
