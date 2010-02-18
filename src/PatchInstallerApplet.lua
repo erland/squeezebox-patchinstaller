@@ -93,7 +93,7 @@ function patchInstallerMenu(self, menuItem, action)
 					if err then
 						log:warn(err)
 					else
-						if chunk.data._can == 1 then
+						if tonumber(chunk.data._can) == 1 then
 							server:userRequest(function(chunk, err)
 								        if err then
 								                log:warn(err)
@@ -109,6 +109,8 @@ function patchInstallerMenu(self, menuItem, action)
 							  	}
 							)
 							self.waitingfor = self.waitingfor + 1
+						else
+							log:info("Server "..tostring(server).." doesn't support patch installation")
 						end
 					end
 				end,
@@ -201,7 +203,9 @@ function patchesSink(self,server,data)
         -- use the response with the most entries
         data, server = nil, nil
         for _, response in pairs(self.responses) do
-                if data == nil or data.count < response.data.count then
+		log:debug("Checking response from "..tostring(response.server).." with "..tostring(response.data.count))
+                if data == nil or data.count == nil or tonumber(data.count) < tonumber(response.data.count) then
+			log:debug("Storing response from "..tostring(response.server))
                         data = response.data
                         server = response.server
                 end
