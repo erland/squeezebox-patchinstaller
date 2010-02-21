@@ -93,6 +93,10 @@ function patchInstallerMenu(self, menuItem, action)
 					if err then
 						log:warn(err)
 					else
+						model = System:getMachine()
+						if model == "squeezeplay" then
+							model = self.model
+						end
 						if tonumber(chunk.data._can) == 1 then
 							server:userRequest(function(chunk, err)
 								        if err then
@@ -103,7 +107,7 @@ function patchInstallerMenu(self, menuItem, action)
 								end,
 								player and player:getId(),
 								{ "jivepatches", 
-								  "target:" .. System:getMachine(), 
+								  "target:" .. model, 
 								  "version:" .. string.match(JIVE_VERSION, "(%d%.%d)"),
 								  opt and "optstr:other|user" or "optstr:none"
 							  	}
@@ -146,11 +150,11 @@ function init(self)
 	if not self.luadir then
 		local width,height = Framework.getScreenSize()
 		if width == 480 then
-			self.model = "touch"
+			self.model = "fab4"
 		elseif width == 320 then
-			self.model = "radio"
+			self.model = "baby"
 		else
-			self.model = "controller"
+			self.model = "jive"
 		end
 
 		if lfs.attributes("/usr/share/jive/applets") ~= nil then
@@ -617,9 +621,13 @@ function _downloadFile(self, dir, backupdir)
                                 fh = 'DIR'
                         else
 				if lfs.attributes(filename) ~= nil then
-					local dir = string.gsub(filename,"/[^/]+$","/")
-					os.execute("mkdir -p \""..backupdir.."/"..dir.."\"")
-					os.execute("cp \""..filename.."\" \""..backupdir.."/"..filename.."\"")
+					if lfs.attributes(filename)["size"] and lfs.attributes(filename)["size"]<204800 then
+						local dir = string.gsub(chunk.filename,"/[^/]+$","/")
+						os.execute("mkdir -p \""..backupdir.."/"..dir.."\"")
+						os.execute("cp \""..filename.."\" \""..backupdir.."/"..chunk.filename.."\"")
+					else
+						os.execute("mkdir -p \""..backupdir.."\"")
+					end
 				end
                                 log:info("extracting file: " .. filename)
                                 fh = io.open(filename, "w")
