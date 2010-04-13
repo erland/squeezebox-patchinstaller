@@ -95,7 +95,14 @@ function patchInstallerMenu(self, menuItem, action)
 					else
 						model = System:getMachine()
 						if model == "squeezeplay" then
-							model = self.model
+							local width,height = Framework.getScreenSize()
+							if width == 480 then
+								model = "fab4"
+							elseif width == 320 then
+								model = "baby"
+							else
+								model = "jive"
+							end
 						end
 						if tonumber(chunk.data._can) == 1 then
 							server:userRequest(function(chunk, err)
@@ -148,15 +155,6 @@ end
 
 function init(self)
 	if not self.luadir then
-		local width,height = Framework.getScreenSize()
-		if width == 480 then
-			self.model = "fab4"
-		elseif width == 320 then
-			self.model = "baby"
-		else
-			self.model = "jive"
-		end
-
 		if lfs.attributes("/usr/share/jive/applets") ~= nil then
 			self.luadir = "/usr/"
 		else
@@ -173,11 +171,27 @@ function init(self)
 
 		log:debug("Got lua directory: "..self.luadir)
 	end
+	-- Handle upgrade scenario
+	for patchname,patchversion in pairs(self:getSettings()) do
+		if not string.find(patchname,"^_") then
+			if lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..patchname..".replacements") and not lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..patchname..".replacements.patch") then
+				os.execute("find \""..self.luadir.."share/jive/applets/PatchInstaller.patches/"..patchname..".replacements\" -type f > \""..self.luadir.."/activepatches.txt\"")
+				if lfs.attributes(self.luadir.."/activepatches.txt")["size"] > 0 then
+					log:info("Fixing installed patch state for: "..patchname)
+					os.execute("echo \""..patchversion.."\" > \""..self.luadir.."share/jive/applets/PatchInstaller.patches/"..patchname..".replacements.patch\"")
+				else
+					log:info("Removing empty directories for broken patch backup: "..patchname)
+					os.execute("rm -rf \""..self.luadir.."share/jive/applets/PatchInstaller.patches/"..patchname..".replacements\"")
+				end
+				os.execute("rm -f \""..self.luadir.."/activepatches.txt\"")
+			end
+		end
+	end
 end
 
 function isPatchInstalled(self,patchname)
 	self:init()
-	if lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..patchname..".patch") then
+	if lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..patchname..".patch") or lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..patchname..".replacements.patch") then
 		if self:getSettings()[patchname] then
 			return true
 		end
@@ -236,7 +250,7 @@ function patchesSink(self,server,data)
 	if data and data.item_loop then
 		for _,entry in pairs(data.item_loop) do
 			local checked = false
-			if lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".patch") or lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements") then
+			if lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".patch") or lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements.patch") then
 				checked = true
 			end
 			if self:getSettings()[entry.name] and not checked then
@@ -328,7 +342,7 @@ function showPatchDetails(self,title,entry)
 	menu:setHeaderWidget(Textarea("help_text",description))
 	
 
-	if lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".patch") or lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements") then
+	if lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".patch") or lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements.patch") then
 		menu:addItem(
 			{
 				text = tostring(self:string("PATCHINSTALLER_UNINSTALL")),
@@ -427,6 +441,7 @@ function revertPatch(self, entry)
 			if success and lfs.attributes(self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements") then
 				os.execute("cp -r \""..self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements/\"* "..self.luadir)
 				os.execute("rm -rf \""..self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements\"")
+				os.execute("rm -f \""..self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements.patch\"")
 			end
 
 			if success then
@@ -472,6 +487,7 @@ function _download(self,entry)
 	os.execute("mkdir -p \""..self.luadir.."share/jive/applets/PatchInstaller.patches\"")
 	if string.find(entry.url,"%.zip") then
 		os.execute("rm -rf \""..self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements\"")
+		os.execute("rm -f \""..self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements.patch\"")
 		os.execute("mkdir -p \""..self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements\"")
 	end
 	os.execute("rm -f \""..self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".patch\"")
@@ -515,6 +531,9 @@ function _download(self,entry)
 			if not self:patching(entry.name,self.luadir.."/"..entry.name..".patch",false) then
 				success = false
 			end
+		end
+		if success then
+			os.execute("echo \""..entry.version.."\" > \""..self.luadir.."share/jive/applets/PatchInstaller.patches/"..entry.name..".replacements.patch\"")
 		end
 		os.execute("rm -f /tmp/PatchInstallerAbout.rej")
 		os.execute("patch -p0 --forward -t --dry-run --global-reject-file=/tmp/PatchInstallerAbout.rej -d "..self.luadir.." < \""..self.luadir.."share/jive/applets/PatchInstaller/about.patch\"")
