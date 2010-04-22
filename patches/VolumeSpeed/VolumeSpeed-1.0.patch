@@ -1,32 +1,32 @@
---- share/jive/jive/ui/IRMenuAccel.lua.org      Thu Apr 22 10:17:58 2010
-+++ share/jive/jive/ui/IRMenuAccel.lua  Thu Apr 22 10:34:19 2010
+--- share/jive/jive/ui/IRMenuAccel.lua.old	2010-04-22 21:01:36.000000000 +0200
++++ share/jive/jive/ui/IRMenuAccel.lua	2010-04-22 21:03:02.000000000 +0200
 @@ -21,7 +21,7 @@
  local EVENT_IR_REPEAT      = jive.ui.EVENT_IR_REPEAT
-
+ 
  local DOUBLE_CLICK_HOLD_TIME = 400 -- ms
 -local INITIAL_ITEM_CHANGE_PERIOD = 350 -- ms
 +local INITIAL_ITEM_CHANGE_PERIOD = 200 -- ms
  local CYCLES_BEFORE_ACCELERATION_STARTS = 1
-
+ 
  -- our class
 @@ -132,14 +132,16 @@
-                elseif self.itemChangeCycles > 80 then
-                        scrollBy = 64
-                elseif self.itemChangeCycles > 60 then
--                       scrollBy = 16
-+                       scrollBy = 32
-                elseif self.itemChangeCycles > 50 then
--                       scrollBy = 8
-+                       scrollBy = 16
-                elseif self.itemChangeCycles > 40 then
--                       scrollBy = 4
-+                       scrollBy = 8
-                elseif self.itemChangeCycles > 30 then
--                       scrollBy = 2
-+                       scrollBy = 4
-                elseif self.itemChangeCycles > 16 then
-+                       scrollBy = 2
-+               elseif self.itemChangeCycles > 6 then
-                        self.itemChangePeriod = 0 --full speed
-                end
-
+ 		elseif self.itemChangeCycles > 80 then
+ 			scrollBy = 64
+ 		elseif self.itemChangeCycles > 60 then
+-			scrollBy = 16
++			scrollBy = 32
+ 		elseif self.itemChangeCycles > 50 then
+-			scrollBy = 8
++			scrollBy = 16
+ 		elseif self.itemChangeCycles > 40 then
+-			scrollBy = 4
++			scrollBy = 8
+ 		elseif self.itemChangeCycles > 30 then
+-			scrollBy = 2
++			scrollBy = 4
+ 		elseif self.itemChangeCycles > 16 then
++			scrollBy = 2
++		elseif self.itemChangeCycles > 6 then
+ 			self.itemChangePeriod = 0 --full speed
+ 		end
+ 
