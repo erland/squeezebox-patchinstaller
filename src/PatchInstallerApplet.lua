@@ -507,7 +507,7 @@ function _download(self,entry)
 		end
 		
 		if self.downloadedSha == nil or entry.sha ~= self.downloadedSha then
-			log:warn("Mismatched sha on "..entry.url.." got "..self.downloadedSha.." expected "..entry.sha)
+			log:warn("Mismatched sha on "..entry.url.." got "..tostring(self.downloadedSha).." expected "..entry.sha)
 			success = false
 		else
 			log:debug("Downloaded and verified sha on "..entry.url)
