@@ -1,0 +1,11 @@
+--- share/jive/applets/AlarmSnooze/AlarmSnoozeApplet.lua.orig	2010-04-13 23:46:28.000000000 +0200
++++ share/jive/applets/AlarmSnooze/AlarmSnoozeApplet.lua	2010-05-02 08:46:24.000000000 +0200
+@@ -388,7 +388,7 @@
+ 
+ function soundFallbackAlarm(self)
+ 	log:warn("soundFallbackAlarm()")
+-	self.localPlayer:volumeLocal(43)
++	self.localPlayer:volumeLocal(20)
+ 	self.localPlayer:stop(true)
+ 	self.alarmInProgress = 'rtc'
+ 	self.localPlayer:playFileInLoop(self.alarmTone)
