@@ -19,7 +19,7 @@ following methods:
 
 
 -- stuff we use
-local pairs, ipairs, tostring, tonumber, package,type,string = pairs, ipairs, tostring, tonumber, package, type,string
+local pairs, ipairs, tostring, tonumber, package,type,setmetatable, string = pairs, ipairs, tostring, tonumber, package, type,setmetatable, string
 
 local oo               = require("loop.simple")
 local os               = require("os")
@@ -53,6 +53,7 @@ local json             = require("json")
 local appletManager    = appletManager
 local jiveMain         = jiveMain
 local jnt              = jnt
+local jive             = jive
 
 local JIVE_VERSION     = jive.JIVE_VERSION
 
@@ -73,7 +74,6 @@ function patchInstallerMenu(self, menuItem, action)
 
 	self:init()
 
-	local opt = not self:getSettings()["_RECONLY"]
 	self.waitingfor = 0
 	for id, server in appletManager:callService("iterateSqueezeCenters") do
 	        -- need a player for SN query otherwise skip SN, don't need a player for SBS
@@ -116,7 +116,7 @@ function patchInstallerMenu(self, menuItem, action)
 								{ "jivepatches", 
 								  "target:" .. model, 
 								  "version:" .. string.match(JIVE_VERSION, "(%d%.%d)"),
-								  opt and "optstr:other|user" or "optstr:none"
+								  "optstr:other|user"
 							  	}
 							)
 							self.waitingfor = self.waitingfor + 1
@@ -233,10 +233,21 @@ function patchesSink(self,server,data)
 		self.window:removeWidget(self.menu)
 		self.window:hide()
 	end
+	jive.ui.style.item_no_icon = _uses(jive.ui.style.item, {
+		order = { 'text', 'check' },
+	})
+	jive.ui.style.icon_list.menu.item_no_icon = _uses(jive.ui.style.icon_list.menu.item, {
+		order = { 'text', 'check' },
+	})
+	jive.ui.style.icon_list.menu.selected.item_no_icon = _uses(jive.ui.style.icon_list.menu.selected.item, {
+		order = { 'text', 'check' },
+	})
+	jive.ui.style.icon_list.menu.pressed.item_no_icon = _uses(jive.ui.style.icon_list.menu.pressed.item, {
+	})
 	if server then
-		self.window = Window("text_list", tostring(self:string("PATCHINSTALLER")).." ("..server.name..")")
+		self.window = Window("icon_list", tostring(self:string("PATCHINSTALLER")).." ("..server.name..")")
 	else
-		self.window = Window("text_list", tostring(self:string("PATCHINSTALLER")))
+		self.window = Window("icon_list", tostring(self:string("PATCHINSTALLER")))
 	end
 	self.menu = SimpleMenu("menu")
 
@@ -258,9 +269,15 @@ function patchesSink(self,server,data)
 				self.reinstallList[idx] = entry
 				idx = idx + 1
 			end
+			local name = entry.title
+			if entry.creator then
+				name = name.."\n"..entry.creator
+			else
+				name = name.."\n"
+			end
 			self.menu:addItem({
-				text = entry.title,
-				style = 'item_choice',
+				text = name,
+				style = 'item_no_icon',
 				check = Checkbox("checkbox",
 				        function(object, isSelected)
 						self.appletwindow = self:showPatchDetails(entry.title,entry)
@@ -289,19 +306,6 @@ function patchesSink(self,server,data)
 				weight = 1
 			})
         end
-	self.menu:addItem({
-		        text = self:string("PATCHINSTALLER_RECONLY"),
-		        style = 'item_choice',
-		        check = Checkbox("checkbox",
-		                function(object, isSelected)
-		                        self:getSettings()["_RECONLY"] = isSelected
-		                        self:storeSettings()
-					self:patchInstallerMenu()
-		                end,
-		                self:getSettings()["_RECONLY"]
-		        ),
-		        weight = 3
-		})
 	self.menu:addItem({
 		        text = self:string("PATCHINSTALLER_AUTOUPGRADE"),
 		        style = 'item_choice',
@@ -664,6 +668,24 @@ function _downloadFile(self, dir, backupdir)
 
                 return 1
         end
+end
+
+function _uses(parent, value)
+        if parent == nil then
+                log:warn("nil parent in _uses at:\n", debug.traceback())
+        end
+        local style = {}
+        setmetatable(style, { __index = parent })
+        for k,v in pairs(value or {}) do
+                if type(v) == "table" and type(parent[k]) == "table" then
+                        -- recursively inherrit from parent style
+                        style[k] = _uses(parent[k], v)
+                else
+                        style[k] = v
+                end
+        end
+
+        return style
 end
 
 function _downloadShaCheck(self)
