@@ -1,0 +1,37 @@
+Index: share/jive/jive/slim/SlimServer.lua
+===================================================================
+--- share/jive/jive/slim/SlimServer.lua	(revision 8697)
++++ share/jive/jive/slim/SlimServer.lua	(working copy)
+@@ -311,6 +311,13 @@
+ 	self.upgradeUrl = url
+ 	self.upgradeForce = (tonumber(chunk.data.firmwareUpgrade) == 1)
+ 
++	local currentVersion = string.gsub(JIVE_VERSION," .*$","")
++	local version = string.gsub(_firmwareVersion(url)," .*$","")
++	if currentVersion == version and self.upgradeForce then
++		log:info(self.name, " Don't force firmwares of same version but different revision")
++		self.upgradeForce = false
++	end
++
+ 	log:info(self.name, " firmware=", self.upgradeUrl, " force=", self.upgradeForce)
+ 
+ 	if oldUpgradeUrl ~= self.upgradeUrl
+@@ -319,6 +326,18 @@
+ 	end
+ end
+ 
++function _firmwareVersion(url)
++	local machine = System:getMachine()
++	
++	local major, minor = string.match(url, "\/" .. machine .. "_([^_]+)_([^_]+)\.bin")
++		
++	if not major then
++		return
++	end
++						
++	return major .. " " .. minor
++end
++							
+ 
+ -- package private method to delete a player
+ function _deletePlayer(self, player)
