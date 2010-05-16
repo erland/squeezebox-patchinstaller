@@ -672,7 +672,7 @@ end
 
 function _uses(parent, value)
         if parent == nil then
-                log:warn("nil parent in _uses at:\n", debug.traceback())
+                log:warn("nil parent in _uses")
         end
         local style = {}
         setmetatable(style, { __index = parent })
