@@ -1,0 +1,49 @@
+diff -dur ../../../src/squeezeplay/share/applets/SetupAppletInstaller/SetupAppletInstallerApplet.lua ../share/jive/applets/SetupAppletInstaller/SetupAppletInstallerApplet.lua
+--- share/jive/applets/SetupAppletInstaller/SetupAppletInstallerApplet.lua	2010-04-23 20:58:12.000000000 +0100
++++ share/jive/applets/SetupAppletInstaller/SetupAppletInstallerApplet.lua	2010-05-22 10:33:54.000000000 +0100
+@@ -202,6 +202,10 @@
+ 					status = "REINSTALL"
+ 				else
+ 					status = entry.version == installed[entry.name] and "INSTALLED" or "UPDATES"
++					if status == "UPDATES" then
++						self.updateall = self.updateall or {}
++						self.updateall[entry.name] = { url = entry.url, ver = entry.version, sha = entry.sha }
++					end
+ 				end
+ 			end
+ 
+@@ -244,6 +248,21 @@
+ 		})
+ 	end
+ 
++	if self.updateall then
++		local count = 0
++		for _, _ in pairs(self.updateall) do count = count + 1 end
++		self.menu:addItem({
++			text = tostring(self:string("UPDATE_ALL")) .. " (" .. count .. ")",
++			sound = "WINDOWSHOW",
++			callback = function(event, menuItem)
++				self.toremove = self.updateall 
++				self.todownload = self.updateall
++				self:action()
++			end,
++			weight = 1
++		})
++	end
++
+ 	for name, ver in pairs(installed) do
+ 		if appletManager:hasApplet(name) and not self.inrepos[name] then
+ 			self.menu:addItem({
+diff -dur ../../../src/squeezeplay/share/applets/SetupAppletInstaller/strings.txt ../share/jive/applets/SetupAppletInstaller/strings.txt
+--- share/jive/applets/SetupAppletInstaller/strings.txt	2010-01-26 21:16:51.000000000 +0000
++++ share/jive/applets/SetupAppletInstaller/strings.txt	2010-05-22 10:23:35.000000000 +0100
+@@ -193,6 +193,9 @@
+ 	RU	Переустановить все
+ 	SV	Installera om alla
+ 
++UPDATE_ALL
++	EN	Update All
++
+ APPLET_WARN
+ 	CS	Aplety třetích stran nejsou podporovány a měly by být instalovány na vlastní riziko. Před instalací se ujistěte se, že důvěřujete autorovi apletu.
+ 	DA	Underprogrammer fra tredjepart understøttes ikke, og installationen sker på eget ansvar. Du skal sikre dig at du kan stole på udgiveren, inden du installerer underprogrammet.
