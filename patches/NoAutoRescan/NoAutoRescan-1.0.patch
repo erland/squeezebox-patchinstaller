@@ -1,0 +1,19 @@
+--- squeezecenter/Slim/Utils/OS/SqueezeOS.pm.old
++++ squeezecenter/Slim/Utils/OS/SqueezeOS.pm
+@@ -69,7 +69,7 @@
+ 	
+ 	$defaults->{maxPlaylistLength} = 100;
+ 	$defaults->{libraryname} = "Squeezebox Touch";
+-	$defaults->{autorescan} = 1;
++	$defaults->{autorescan} = 0;
+ }
+ 
+ my %prefSyncHandlers = (
+@@ -128,6 +128,7 @@
+ sub postInitPrefs {
+ 	my ( $class, $prefs ) = @_;
+ 	
++	$prefs->set('autorescan',0);	
+ 	_checkMediaAtStartup($prefs);
+ 	
+ 	$prefs->setChange( \&_onAudiodirChange, 'audiodir', 'FIRST' );

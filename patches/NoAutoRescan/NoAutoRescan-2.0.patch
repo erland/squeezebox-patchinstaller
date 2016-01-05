@@ -1,0 +1,20 @@
+--- squeezecenter/Slim/Utils/OS/SqueezeOS.pm.old
++++ squeezecenter/Slim/Utils/OS/SqueezeOS.pm
+@@ -69,7 +69,7 @@
+ 	
+ 	$defaults->{maxPlaylistLength} = 100;
+ 	$defaults->{libraryname} = "Squeezebox Touch";
+-	$defaults->{autorescan} = 1;
++	$defaults->{autorescan} = 0;
+ 	$defaults->{disabledextensionsvideo}  = 'VIDEO';		# don't scan videos on SqueezeOS
+ 	$defaults->{disabledextensionsimages} = 'bmp, gif, png' # scaling down non-jpg might use too much memory
+ }
+@@ -130,6 +130,8 @@
+ sub postInitPrefs {
+ 	my ( $class, $prefs ) = @_;
+ 	
++	$prefs->set('autorescan',0);
++
+ 	_checkMediaAtStartup($prefs);
+ 	
+ 	$prefs->setChange( \&_onAudiodirChange, 'mediadirs', 'FIRST' );

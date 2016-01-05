@@ -1,0 +1,48 @@
+--- share/jive/applets/QVGAbaseSkin/QVGAbaseSkinApplet.lua.old	2010-02-04 07:39:06.000000000 +0100
++++ share/jive/applets/QVGAbaseSkin/QVGAbaseSkinApplet.lua	2010-02-04 07:39:45.000000000 +0100
+@@ -366,12 +366,12 @@
+         	POPUP_TEXT_SIZE_1 = 22,
+         	POPUP_TEXT_SIZE_2 = 16,
+         	HELP_TEXT_FONT_SIZE = 16,
+-        	TEXTAREA_FONT_SIZE = 16,
++        	TEXTAREA_FONT_SIZE = 22,
+         	TEXTINPUT_FONT_SIZE = 20,
+         	TEXTINPUT_SELECTED_FONT_SIZE = 32,
+         	HELP_FONT_SIZE = 16,
+ 		UPDATE_SUBTEXT_SIZE = 16,
+-		ICONBAR_FONT = 12,
++		ICONBAR_FONT = 20,
+ 
+ 		ITEM_ICON_ALIGN   = 'right',
+ 		LANDSCAPE_LINE_ITEM_HEIGHT = 45,
+--- share/jive/applets/QVGAlandscapeSkin/QVGAlandscapeSkinApplet.lua.old	2010-02-04 07:40:12.000000000 +0100
++++ share/jive/applets/QVGAlandscapeSkin/QVGAlandscapeSkinApplet.lua	2010-02-04 07:41:52.000000000 +0100
+@@ -188,8 +188,8 @@
+         }
+ 
+ 
+-	local NP_ARTISTALBUM_FONT_SIZE = 18
+-	local NP_TRACK_FONT_SIZE = 21
++	local NP_ARTISTALBUM_FONT_SIZE = 26
++	local NP_TRACK_FONT_SIZE = 29
+ 
+ 	local controlHeight   = 38
+ 	local controlWidth    = 45
+@@ -210,7 +210,7 @@
+ 		bgImg = Tile:fillColor(0x000000ff),
+ 		title = {
+ 			zOrder = 9,
+-			h = 60,
++			h = 76,
+ 			text = {
+ 				hidden = 1,
+ 			},
+@@ -283,7 +283,7 @@
+ 			zOrder = 10,
+ 			position = LAYOUT_NORTH,
+ 			padding = { 0, 0, 0, 0 },
+-			border = { 0, 59, 0, 0 },
++			border = { 0, 75, 0, 0 },
+ 			w = WH_FILL,
+ 			order = { "slider" },
+ 		},

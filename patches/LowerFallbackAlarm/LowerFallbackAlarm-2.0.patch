@@ -1,0 +1,17 @@
+--- share/jive/applets/AlarmSnooze/AlarmSnoozeApplet.lua.orig	2011-07-26 09:27:44.000000000 +0200
++++ share/jive/applets/AlarmSnooze/AlarmSnoozeApplet.lua	2011-07-26 09:26:48.000000000 +0200
+@@ -449,12 +449,12 @@
+ 	self.localPlayer:playFileInLoop(self.alarmTone)
+ 	self.fadeInTimer = Timer(200, 
+ 			function ()
+-				if self.alarmVolume < 43 then
++				if self.alarmVolume < 20 then
+ 					log:info("fading in fallback alarm: ", self.alarmVolume)
+ 					self.alarmVolume = self.alarmVolume + 1
+ 					self.localPlayer:volumeLocal(self.alarmVolume)
+ 				else
+-					log:info("stop self.alarmVolume at reasonable volume (43):", self.alarmVolume)
++					log:info("stop self.alarmVolume at reasonable volume (20):", self.alarmVolume)
+ 					self.fadeInTimer:stop()
+ 				end
+ 			end

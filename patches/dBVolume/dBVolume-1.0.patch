@@ -1,0 +1,19 @@
+--- share/jive/applets/SlimBrowser/Volume.lua.org	2010-04-14 00:07:31.000000000 +0200
++++ share/jive/applets/SlimBrowser/Volume.lua	2010-04-14 00:10:08.000000000 +0200
+@@ -20,6 +20,7 @@
+ local Window                 = require("jive.ui.Window")
+ local IRMenuAccel            = require("jive.ui.IRMenuAccel")
+ 
++local string                 = require("jive.utils.string")
+ local debug                  = require("jive.utils.debug")
+ local log                    = require("jive.utils.log").logger("applet.SlimBrowser")
+ 
+@@ -58,7 +59,7 @@
+ 		self.slider:setValue(0)
+ 
+ 	else
+-		self.title:setValue(tostring(self:_getVolume()) )
++		self.title:setValue(string.format("%0.1f dB",(self:_getVolume()/2-50)) )
+ 		self.icon:setStyle('icon_popup_volume')
+ 		self.slider:setValue(self:_getVolume())
+ 	end

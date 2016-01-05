@@ -1,0 +1,164 @@
+--- share/jive/applets/WQVGAsmallSkin/WQVGAsmallSkinApplet.lua.org	Thu Apr 22 13:30:22 2010
++++ share/jive/applets/WQVGAsmallSkin/WQVGAsmallSkinApplet.lua	Thu Apr 22 12:20:53 2010
+@@ -104,7 +104,7 @@
+ 			},
+ 			{
+ 				style = 'nowplaying_art_only',
+-				artworkSize = '470x262',
++				artworkSize = '470x222', --'470x262',
+ 				suppressTitlebar = 1,
+ 				text = self:string("ART_ONLY"),
+ 			},
+@@ -2785,8 +2781,8 @@
+ 	local NP_ARTISTALBUM_FONT_SIZE = 20
+ 	local NP_TRACK_FONT_SIZE = 24
+ 
+-	local controlHeight = 38
+-	local controlWidth = 45
++	local controlHeight = 50 --38
++	local controlWidth = 64  --45
+ 	local volumeBarWidth = 163 -- screenWidth - (transport controls + volume controls + dividers + border around volume bar)
+ 	local buttonPadding = 0
+ 
+@@ -2857,7 +2853,7 @@
+ 			position   = _tracklayout.position,
+ 			border     = _tracklayout.border,
+ 			x          = _tracklayout.x,
+-			y          = TITLE_HEIGHT + 32 + 32,
++			y          = TITLE_HEIGHT + 30 + 30,
+ 			h          = 32,
+ 			npartist = {
+ 				padding    = { 0, 6, 0, 0 },
+@@ -2874,7 +2870,7 @@
+ 			position   = _tracklayout.position,
+ 			border     = _tracklayout.border,
+ 			x          = _tracklayout.x,
+-			y          = TITLE_HEIGHT + 32 + 32 + 32,
++			y          = TITLE_HEIGHT + 30 + 30 + 30,
+ 			h          = 32,
+ 			npalbum = {
+ 				w          = screenWidth - _tracklayout.x - 10,
+@@ -2897,10 +2893,10 @@
+ 			x = 8,
+ 			y = TITLE_HEIGHT + 4,
+ 			align = "center",
+-			h = 180,
++			h = 168, --180,
+ 
+ 			artwork = {
+-				w = 180,
++				w = 168, --180,
+ 				align = "center",
+ 				padding = 0,
+ 				img = false,
+@@ -2911,13 +2907,17 @@
+ 	
+ 		--transport controls
+ 		npcontrols = {
+-			order = { 'rew', 'div1', 'play', 'div2', 'fwd', 'div3', 'repeatMode', 'div4', 'shuffleMode', 
++			--order = { 'rew', 'div1', 'play', 'div2', 'fwd', 'div3', 'repeatMode', 'div4', 'shuffleMode', 
++			--		'div5', 'volDown', 'div6', 'volSlider', 'div7', 'volUp' },
++			order = { 'rew', 'div1', 'play', 'div2', 'fwd',  
+ 					'div5', 'volDown', 'div6', 'volSlider', 'div7', 'volUp' },
+ 			position = LAYOUT_SOUTH,
+ 			h = controlHeight,
+ 			w = WH_FILL,
+ 			bgImg = touchToolbarBackground,
+-
++			--bgImg = { img = _loadImageTile(self,  imgpath .. "Touch_Toolbar/toolbar_tch_bkgrd.png") },
++                        --          h = controlHeight
++                        --},
+ 			div1 = _uses(_transportControlBorder),
+ 			div2 = _uses(_transportControlBorder),
+ 			div3 = _uses(_transportControlBorder),
+@@ -2963,11 +2963,11 @@
+ 				img = _loadImage(self, "Icons/icon_toolbar_repeat_song_on.png"),
+ 			}),
+ 			volDown   = _uses(_transportControlButton, {
+-				w = 34,
++				w = 52, --34,
+ 				img = _loadImage(self, "Icons/icon_toolbar_vol_down.png"),
+ 			}),
+ 			volUp   = _uses(_transportControlButton, {
+-				w = 34,
++				w = 52, --34,
+ 				img = _loadImage(self, "Icons/icon_toolbar_vol_up.png"),
+ 			}),
+ 			thumbsUp   = _uses(_transportControlButton, {
+@@ -3006,7 +3006,7 @@
+ 		npprogress = {
+ 			position = LAYOUT_NONE,
+ 			x = 202,
+-			y = TITLE_HEIGHT + 29 + 26 + 32 + 32 + 23,
++			y = TITLE_HEIGHT + 29 + 26 + 30 + 30 + 23, --+ 29 + 26 + 32 + 32 + 23,
+ 			padding = { 0, 10, 0, 0 },
+ 			order = { "elapsed", "slider", "remain" },
+ 			elapsed = {
+@@ -3057,7 +3057,7 @@
+ 			order = { "elapsed" },
+ 			position = LAYOUT_NONE,
+ 			x = 202,
+-			y = TITLE_HEIGHT + 29 + 26 + 32 + 32 + 23,
++			y = TITLE_HEIGHT + 29 + 26 + 30 + 30 + 23, --+ 29 + 26 + 32 + 32 + 23,
+ 			elapsed = {
+ 				w = WH_FILL,
+ 				align = "left",
+@@ -3137,7 +3137,7 @@
+ 		bgImg = nocturneWallpaper,
+ 		title            = { hidden = 1 },
+ 		nptitle          = { hidden = 1 },
+-		npcontrols       = { hidden = 1 },
++		npcontrols       = { hidden = 0 },
+ 		npprogress       = { hidden = 1 },
+ 		npprogressNB     = { hidden = 1 },
+ 		npartistgroup    = { hidden = 1 },
+@@ -3146,9 +3146,9 @@
+ 			w = 480,
+ 			position = LAYOUT_CENTER,
+ 			align = "center",
+-			h = 272,
++			h = 222, -- 272,
+ 			border = 0,
+-			padding = 5,
++			padding = 0, --5,
+ 			artwork = {
+ 				w = 480,
+ 				border = 0,
+@@ -3322,7 +3318,7 @@
+ 			x = 0,
+ 			y = 2 * TITLE_HEIGHT + 4,
+ 			w = 480,
+-			h = 272 - (2 * TITLE_HEIGHT + 4 + 45),
++			h = 272 - (2 * TITLE_HEIGHT + 6 + controlHeight),
+ 			border = { 0, 0, 0, 0 },
+ 			padding = { 0, 0, 0, 0 },
+ 
+@@ -3331,7 +3327,7 @@
+ 				x = 0,
+ 				y = 2 * TITLE_HEIGHT + 4,
+ 				w = 480,
+-				h = 272 - (2 * TITLE_HEIGHT + 4 + 45),
++				h = 272 - (2 * TITLE_HEIGHT + 6 + controlHeight),
+ 				border = { 0, 0, 0, 0 },
+ 				padding = { 0, 0, 0, 0 },
+ 
+@@ -3370,16 +3366,16 @@
+ 			x = 0,
+ 			y = TITLE_HEIGHT + 38,
+ 			w = 480,
+-			h = 272 - (TITLE_HEIGHT + 38 + 38),
++			h = 272 - (TITLE_HEIGHT + 38 + controlHeight),
+ 			border = { 0, 0, 0, 0 },
+ 			padding = { 0, 0, 0, 0 },
+ 
+ 			vumeter_analog = {
+ 				position = LAYOUT_NONE,
+ 				x = 0,
+-				y = TITLE_HEIGHT + 38,
++				y = TITLE_HEIGHT + controlHeight,
+ 				w = 480,
+-				h = 272 - (TITLE_HEIGHT + 38 + 38),
++				h = 272 - (TITLE_HEIGHT + 38 + controlHeight),
+ 				border = { 0, 0, 0, 0 },
+ 				padding = { 0, 0, 0, 0 },
+ 				bgImg = _loadImage(self, "UNOFFICIAL/VUMeter/vu_analog_25seq_b.png"),
